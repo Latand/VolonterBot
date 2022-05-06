@@ -3,12 +3,13 @@ from dataclasses import dataclass
 from environs import Env
 
 
+
 @dataclass
-class DbConfig:
-    host: str
-    password: str
-    user: str
-    database: str
+class Channels:
+    search_channel_id: int
+    medicine_channel_id: int
+    provision_channel_id: int
+    evacuation_channel_id: int
 
 
 @dataclass
@@ -26,8 +27,8 @@ class Miscellaneous:
 @dataclass
 class Config:
     tg_bot: TgBot
-    db: DbConfig
     misc: Miscellaneous
+    channels: Channels
 
 
 def load_config(path: str = None):
@@ -40,11 +41,12 @@ def load_config(path: str = None):
             admin_ids=list(map(int, env.list("ADMINS"))),
             use_redis=env.bool("USE_REDIS"),
         ),
-        db=DbConfig(
-            host=env.str('DB_HOST'),
-            password=env.str('DB_PASS'),
-            user=env.str('DB_USER'),
-            database=env.str('DB_NAME')
-        ),
-        misc=Miscellaneous()
+
+        misc=Miscellaneous(),
+        channels=Channels(
+            search_channel_id=env.int('SEARCH_CHANNEL_ID'),
+            medicine_channel_id=env.int('MEDICINE_CHANNEL_ID'),
+            provision_channel_id=env.int('PROVISION_CHANNEL_ID'),
+            evacuation_channel_id=env.int('EVACUATION_CHANNEL_ID')
+        )
     )
