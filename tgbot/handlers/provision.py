@@ -1,6 +1,7 @@
 from aiogram import Router, F, Bot
+from aiogram.dispatcher.filters import ContentTypesFilter
 from aiogram.dispatcher.fsm.context import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message, ReplyKeyboardRemove, ContentType
 from aiogram.utils.markdown import hbold, hcode
 
 from tgbot.config import Config
@@ -19,18 +20,18 @@ async def get_provision(message: Message, state: FSMContext):
     await state.set_state(GetProvision.EnterAddress)
 
 
+@provision_router.message(GetProvision.EnterAddress, ContentTypesFilter(content_types=ContentType.LOCATION))
+async def get_provision_enter_address_location(message: Message, state: FSMContext):
+    maps_url = google_maps_url(message.location.latitude, message.location.longitude)
+    await state.update_data(address=maps_url)
+    await state.set_state(GetProvision.EnterFullName)
+
+
 @provision_router.message(GetProvision.EnterAddress)
 async def get_provision_enter_address(message: Message, state: FSMContext):
     address = message.text
     await state.update_data(address=address)
     await message.answer('Введите имя человека')
-    await state.set_state(GetProvision.EnterFullName)
-
-
-@provision_router.message(GetProvision.EnterAddress, F.location)
-async def get_provision_enter_address_location(message: Message, state: FSMContext):
-    maps_url = google_maps_url(message.location.latitude, message.location.longitude)
-    await state.update_data(address=maps_url)
     await state.set_state(GetProvision.EnterFullName)
 
 

@@ -1,6 +1,7 @@
 from aiogram import Router, F, Bot
+from aiogram.dispatcher.filters import ContentTypesFilter
 from aiogram.dispatcher.fsm.context import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message, ReplyKeyboardRemove, ContentType
 from aiogram.utils.markdown import hbold, hcode
 
 from tgbot.config import Config
@@ -18,18 +19,18 @@ async def get_medicine(message: Message, state: FSMContext):
     await state.set_state(GetMedicine.EnterAddress)
 
 
-@medicine_router.message(GetMedicine.EnterAddress)
-async def get_medicine_enter_address(message: Message, state: FSMContext):
-    address = message.text
-    await state.update_data(address=address)
+@medicine_router.message(GetMedicine.EnterAddress, ContentTypesFilter(content_types=ContentType.LOCATION))
+async def get_medicine_enter_address_location(message: Message, state: FSMContext):
+    maps_url = google_maps_url(message.location.latitude, message.location.longitude)
+    await state.update_data(address=maps_url)
     await message.answer('Введите названия лекарств, дозировку и количества.')
     await state.set_state(GetMedicine.EnterPrescription)
 
 
-@medicine_router.message(GetMedicine.EnterAddress, F.location)
-async def get_medicine_enter_address_location(message: Message, state: FSMContext):
-    maps_url = google_maps_url(message.location.latitude, message.location.longitude)
-    await state.update_data(address=maps_url)
+@medicine_router.message(GetMedicine.EnterAddress)
+async def get_medicine_enter_address(message: Message, state: FSMContext):
+    address = message.text
+    await state.update_data(address=address)
     await message.answer('Введите названия лекарств, дозировку и количества.')
     await state.set_state(GetMedicine.EnterPrescription)
 
