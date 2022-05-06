@@ -64,5 +64,5 @@ async def evacuate_people_enter_conditions(message: Message, state: FSMContext, 
 '''.format(special_conditions=special_conditions, counter=counter, address=address, full_name=full_name)
 
     await bot.send_message(config.channels.evacuation_channel_id, text_format)
-    await message.answer('Спасибо, ваша заявка была отправлена!')
+    await message.answer(f'Спасибо, ваша заявка {counter} была отправлена!')
     await state.clear()

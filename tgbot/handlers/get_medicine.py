@@ -31,6 +31,13 @@ async def get_medicine_enter_address_location(message: Message, state: FSMContex
 async def get_medicine_enter_address(message: Message, state: FSMContext):
     address = message.text
     await state.update_data(address=address)
+    await message.answer('Введите ФИО человека.')
+    await state.set_state(GetMedicine.EnterFullName)
+
+
+@medicine_router.message(GetMedicine.EnterFullName)
+async def get_medicine_enter_full_name(message: Message, state: FSMContext):
+    await state.update_data(full_name=message.text)
     await message.answer('Введите названия лекарств, дозировку и количества.')
     await state.set_state(GetMedicine.EnterPrescription)
 
@@ -47,12 +54,14 @@ async def get_medicine_enter_prescription(message: Message, state: FSMContext, c
     address = data['address']
 
     prescription = hbold(message.text)
+    full_name = hbold(data['full_name'])
 
     text_format = '''{counter}
 Адрес: {address}
+ФИО: {full_name}
 
 {prescription}
-'''.format(address=address, prescription=prescription, counter=counter)
+'''.format(address=address, prescription=prescription, counter=counter, full_name=full_name)
     await bot.send_message(config.channels.medicine_channel_id, text_format)
-    await message.answer('Спасибо, ваша заявка была отправлена!')
+    await message.answer(f'Спасибо, ваша заявка {counter} была отправлена!')
     await state.clear()

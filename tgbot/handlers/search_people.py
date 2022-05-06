@@ -47,29 +47,40 @@ async def search_people_enter_full_name(message: Message, state: FSMContext):
 
 
 @search_people_router.message(SearchPeople.SendPhoto, F.photo)
-async def search_people_send_photo(message: Message, state: FSMContext, bot: Bot, config: Config,
-                                   json_settings: JSONStorage):
-    data = await state.get_data()
-    counter = json_settings.get('counter') or 0
-    counter += 1
-    json_settings.set('counter', counter)
-    counter = hcode(f'#{counter}')
-    address = data['address']
-    full_name = hbold(data['full_name'])
-    text_format = '''{counter}
-Адрес: {address}
-
-Имя: {full_name}
-'''.format(counter=counter, address=address, full_name=full_name)
-
-    await bot.send_photo(chat_id=config.channels.search_channel_id,
-                         photo=message.photo[-1].file_id,
-                         caption=text_format)
-
-    await message.answer('Спасибо, ваша заявка была отправлена!')
-    await state.clear()
+async def search_people_send_photo(message: Message, state: FSMContext):
+    await state.update_data(photo=message.photo[-1].file_id)
+    await message.answer('Куда сообщить, если найдётся? Введите номер телефона, к которому привязан Телеграм-аккаунт')
+    await state.set_state(SearchPeople.EnterFeedbackAddress)
 
 
 @search_people_router.message(SearchPeople.SendPhoto)
 async def search_people_send_photo_failed(message: Message, state: FSMContext):
     await message.answer('Вы не отправили фото. Попробуйте еще раз')
+
+
+@search_people_router.message(SearchPeople.EnterFeedbackAddress)
+async def search_people_enter_feedback_address(message: Message, state: FSMContext, bot: Bot, config: Config,
+                                               json_settings: JSONStorage):
+    data = await state.get_data()
+
+    counter = json_settings.get('counter') or 0
+    counter += 1
+    json_settings.set('counter', counter)
+    counter = hcode(f'#{counter}')
+    address = data['address']
+    photo = data['photo']
+    full_name = hbold(data['full_name'])
+    feedback_address = hbold(message.text)
+    text_format = '''{counter}
+Адрес: {address}
+
+Имя: {full_name}
+Обратная связь: {feedback_address}
+'''.format(counter=counter, address=address, full_name=full_name, feedback_address=feedback_address)
+
+    await bot.send_photo(chat_id=config.channels.search_channel_id,
+                         photo=photo,
+                         caption=text_format)
+
+    await message.answer(f'Спасибо, ваша заявка {counter} была отправлена!')
+    await state.clear()

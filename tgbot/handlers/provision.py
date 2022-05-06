@@ -1,11 +1,11 @@
 from aiogram import Router, F, Bot
 from aiogram.dispatcher.filters import ContentTypesFilter
 from aiogram.dispatcher.fsm.context import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove, ContentType
+from aiogram.types import Message, ReplyKeyboardRemove, ContentType, CallbackQuery
 from aiogram.utils.markdown import hbold, hcode
 
 from tgbot.config import Config
-from tgbot.keyboards.reply import get_types_of_provision_keyboard
+from tgbot.keyboards.inline import get_types_of_provision_keyboard, TypesOfProvisionCD
 from tgbot.misc.functions import google_maps_url
 from tgbot.misc.states import GetProvision
 from tgbot.services.json_storage import JSONStorage
@@ -31,7 +31,7 @@ async def get_provision_enter_address_location(message: Message, state: FSMConte
 async def get_provision_enter_address(message: Message, state: FSMContext):
     address = message.text
     await state.update_data(address=address)
-    await message.answer('Введите имя человека')
+    await message.answer('Введите ФИО человека')
     await state.set_state(GetProvision.EnterFullName)
 
 
@@ -40,16 +40,18 @@ async def get_provision_enter_full_name(message: Message, state: FSMContext):
     full_name = message.text
     await state.update_data(full_name=full_name)
 
-    types_of_provision_allowed = [
-        'Взрослый',
-        "Детский",
-        "Грудничковый"
-    ]
+    types_of_provision_allowed = {
+        'Взрослый': 0,
+        'Детский': 0,
+        'Грудничковый': 0
+    }
 
+    await state.update_data(types_of_provision=types_of_provision_allowed)
     keyboard = get_types_of_provision_keyboard(types_of_provision_allowed)
+    text = 'Выберите тип набора или завершите выбор'
 
-    await message.answer('Выберите тип набора (можете выбрать несколько)',
-                         reply_markup=keyboard)
+    await message.answer(text, reply_markup=keyboard)
+
     await state.set_state(GetProvision.ChooseType)
 
 
@@ -58,58 +60,58 @@ async def finish_choice(bot: Bot, state: FSMContext, config: Config, data: dict,
     address = data['address']
 
     full_name = hbold(data.get('full_name'))
-    types_of_provision = hbold(data.get('types_of_provision', []))
-    provision_type = hbold('\n'.join(types_of_provision))
-    counter = hcode(f'#{counter}')
+    types_of_provision = data.get('types_of_provision', {})
+    types_of_provision_str = '\n'.join([f'{type_of_provision}: {num}'
+                                        for type_of_provision, num in types_of_provision.items()])
 
     text_format = '''{counter}
 Адрес: {address}
 Имя: {full_name}
 
 Наборы:
-{provision_type}
-'''.format(address=address, full_name=full_name, provision_type=provision_type, counter=counter)
+{types_of_provision_str}
+'''.format(address=address, full_name=full_name, types_of_provision_str=types_of_provision_str, counter=counter)
     await bot.send_message(config.channels.provision_channel_id, text_format)
     await state.clear()
 
 
-@provision_router.message(GetProvision.ChooseType)
-async def add_provision_choose_type(message: Message, state: FSMContext, config: Config, bot: Bot,
-                                    json_settings: JSONStorage):
-    type_of_provision = message.text
+@provision_router.callback_query(GetProvision.ChooseType, TypesOfProvisionCD.filter(F.increase | F.decrease))
+async def add_provision_choose_type_callback(callback_query: CallbackQuery, state: FSMContext,
+                                             callback_data: TypesOfProvisionCD):
     data = await state.get_data()
 
-    if type_of_provision == 'Завершить ✔':
-        counter = json_settings.get('counter') or 0
-        counter += 1
-        json_settings.set('counter', counter)
+    provision_type = callback_data.type
+    types_of_provision = data.get('types_of_provision', {})
+    if provision_type not in types_of_provision:
+        types_of_provision[provision_type] = 0
 
-        await finish_choice(bot, state, config, data, counter)
-        await message.answer('Спасибо, ваша заявка была отправлена!', reply_markup=ReplyKeyboardRemove())
-        return
+    else:
+        if callback_data.increase:
+            types_of_provision[provision_type] += 1
+        elif callback_data.decrease:
+            if types_of_provision[provision_type] > 0:
+                types_of_provision[provision_type] -= 1
+            else:
+                await callback_query.answer('Нельзя менять количество наборов в отрицательное значение',
+                                            show_alert=True)
+                return
 
-    types_of_provision_in_data = data.get('types_of_provision', [])
-    types_of_provision_in_data.append(type_of_provision)
-    await state.update_data(types_of_provision=types_of_provision_in_data)
+    await state.update_data(types_of_provision=types_of_provision)
+    keyboard = get_types_of_provision_keyboard(types_of_provision)
 
-    types_of_provision_allowed = [
-        'Взрослый',
-        "Детский",
-        "Грудничковый"
-    ]
+    await callback_query.message.edit_reply_markup(reply_markup=keyboard)
 
-    # Get types of provision not in data:
-    types_of_provision_not_in_data = [
-        type_of_provision
-        for type_of_provision in types_of_provision_allowed
-        if type_of_provision not in types_of_provision_in_data
-    ]
-    keyboard = get_types_of_provision_keyboard(types_of_provision_not_in_data)
-    types_of_provision_text = '\n'.join(types_of_provision_in_data)
-    text = "Вы выбрали:" \
-           "\n" \
-           f"<b>{types_of_provision_text}</b>" \
-           "\n\n" \
-           "Выберите еще один тип набора или завершите выбор"
 
-    await message.answer(text, reply_markup=keyboard)
+@provision_router.callback_query(GetProvision.ChooseType, TypesOfProvisionCD.filter(F.finish))
+async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContext, config: Config, bot: Bot,
+                                           json_settings: JSONStorage):
+    data = await state.get_data()
+    counter = json_settings.get('counter') or 0
+    counter += 1
+    json_settings.set('counter', counter)
+    counter = hcode(f'#{counter}')
+
+    await finish_choice(bot, state, config, data, counter)
+
+    await call.message.edit_text(f'Спасибо, ваша заявка {counter} была отправлена!')
+    await state.clear()

@@ -5,10 +5,12 @@ class SearchPeople(StatesGroup):
     EnterAddress = State()
     EnterFullName = State()
     SendPhoto = State()
+    EnterFeedbackAddress = State()
 
 
 class GetMedicine(StatesGroup):
     EnterAddress = State()
+    EnterFullName = State()
     EnterPrescription = State()
 
 
