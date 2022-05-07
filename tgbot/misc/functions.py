@@ -28,8 +28,10 @@ async def create_new_request(storage: RedisStorage, user_id: int, channel_id: in
 
 
 def create_jobs(scheduler, user_id, current_request_id):
-    time_to_ask = datetime.datetime.now() + datetime.timedelta(hours=24),
-    time_to_check = datetime.datetime.now() + datetime.timedelta(hours=36)
+    time_to_ask = datetime.datetime.now() + datetime.timedelta(minutes=1)
+    # time_to_ask = datetime.datetime.now() + datetime.timedelta(hours=24)
+    time_to_check = datetime.datetime.now() + datetime.timedelta(minutes=2)
+    # time_to_check = datetime.datetime.now() + datetime.timedelta(hours=36)
 
     scheduler.add_job(
         ask_if_active,

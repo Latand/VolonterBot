@@ -93,14 +93,14 @@ async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContex
                                         for type_of_provision, num in types_of_provision.items()])
 
     text_format = '''
-    Адрес: {address}
-    Имя: {full_name}
+Адрес: {address}
+Имя: {full_name}
 
-    Наборы:
-    {types_of_provision_str}
-    '''.format(address=address, full_name=full_name, types_of_provision_str=types_of_provision_str)
+Наборы:
+{types_of_provision_str}
+'''.format(address=address, full_name=full_name, types_of_provision_str=types_of_provision_str)
 
-    current_request_id = await post_new_request(bot, text_format, config.channels.provision_channel_id,
+    current_request_id = await post_new_request(bot, config.channels.provision_channel_id, text_format,
                                                 state.storage, call.from_user.id)
     create_jobs(scheduler, call.from_user.id, current_request_id)
 

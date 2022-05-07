@@ -57,7 +57,7 @@ async def evacuate_people_enter_conditions(message: Message, state: FSMContext, 
 Специальные условия: {special_conditions}
 '''.format(special_conditions=special_conditions, address=address, full_name=full_name)
 
-    current_request_id = await post_new_request(bot, text_format, config.channels.evacuation_channel_id,
+    current_request_id = await post_new_request(bot, config.channels.evacuation_channel_id, text_format,
                                                 state.storage, message.from_user.id)
     create_jobs(scheduler, message.from_user.id, current_request_id)
 

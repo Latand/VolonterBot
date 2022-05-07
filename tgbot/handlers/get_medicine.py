@@ -59,7 +59,7 @@ async def get_medicine_enter_prescription(message: Message, state: FSMContext, c
 {prescription}
 '''.format(address=address, prescription=prescription, full_name=full_name)
 
-    current_request_id = await post_new_request(bot, text_format, config.channels.medicine_channel_id,
+    current_request_id = await post_new_request(bot, config.channels.medicine_channel_id, text_format,
                                                 state.storage, message.from_user.id)
     create_jobs(scheduler, message.from_user.id, current_request_id)
     await message.answer(f'Спасибо, ваша заявка {current_request_id} была отправлена!')

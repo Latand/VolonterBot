@@ -6,6 +6,7 @@ from aiogram.dispatcher.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 
 from schedulers.base import setup_scheduler
 from tgbot.config import load_config
+from tgbot.handlers.edit_request import edit_request_router
 from tgbot.handlers.evacuation import evacuation_router
 from tgbot.handlers.get_medicine import medicine_router
 from tgbot.handlers.provision import provision_router
@@ -41,7 +42,7 @@ async def main():
     bot = Bot(token=config.tg_bot.token, parse_mode='HTML')
     dp = Dispatcher(storage=storage)
     json_settings = JSONStorage("storage.json")  # Insert the path to our JSON storage, created automatically
-    scheduler = setup_scheduler(bot, config)
+    scheduler = setup_scheduler(bot, config, storage)
 
     dp['config'] = config
     dp['json_settings'] = json_settings
@@ -54,11 +55,13 @@ async def main():
         medicine_router,
         provision_router,
         search_people_router,
+        edit_request_router,
     ]:
         dp.include_router(router)
 
     register_global_middlewares(dp, config)
 
+    scheduler.start()
     await on_startup(bot, config.tg_bot.admin_ids)
     await dp.start_polling(bot)
 

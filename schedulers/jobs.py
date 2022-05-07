@@ -14,6 +14,7 @@ async def ask_if_active(bot: Bot, user_id: int, current_request_id: int):
 async def check_if_active(bot: Bot, current_request_id: int, storage: RedisStorage):
     requests = await storage.redis.get('requests') or '{}'
     requests = json.loads(requests)
+    current_request_id = str(current_request_id)
     request = requests.get(current_request_id)
     if not request:
         return
