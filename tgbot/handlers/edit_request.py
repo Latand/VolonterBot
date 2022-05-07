@@ -17,18 +17,18 @@ async def edit_request_callback(call: CallbackQuery, state: FSMContext, callback
     request_id = str(callback_data.request_id)
     request = requests.get(request_id)
     if not request:
-        await call.message.edit_text('Заявка не найдена')
+        await call.message.edit_text(f'Заявка №{request_id} не найдена')
         return
 
     if request['status'] != 'new':
-        await call.message.edit_text('Заявка не может быть изменена')
+        await call.message.edit_text(f'Заявка №{request_id} не может быть изменена')
         return
 
     if callback_data.active:
-        await call.message.edit_text('Заявка активна')
+        await call.message.edit_text(f'Заявка №{request_id} активна')
         request['status'] = 'active'
     else:
-        await call.message.edit_text('Заявка более не активна')
+        await call.message.edit_text(f'Заявка №{request_id} более не активна')
         request['status'] = 'inactive'
         channel_id = request['channel_id']
         message_id = request['message_id']
