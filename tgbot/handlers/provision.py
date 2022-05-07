@@ -110,6 +110,6 @@ async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContex
     current_request_id = await post_new_request(bot, config.channels.provision_channel_id, text_format,
                                                 state.storage, call.from_user.id)
     create_jobs(scheduler, call.from_user.id, current_request_id)
-
-    await call.message.edit_text(f'Спасибо, ваша заявка {current_request_id} была отправлена!')
+    await call.message.answer(text_format)
+    await call.message.edit_text(f'Ваша заявка №{current_request_id} была принята!')
     await state.clear()

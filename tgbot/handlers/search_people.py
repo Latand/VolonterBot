@@ -85,6 +85,6 @@ async def search_people_enter_feedback_address(message: Message, state: FSMConte
     await sent_message.edit_caption(text_format_post)
 
     create_jobs(scheduler, message.from_user.id, current_request_id)
-
+    await message.answer_photo(photo, caption=text_format_post)
     await message.answer(f'Спасибо, ваша заявка {counter} была отправлена!')
     await state.clear()

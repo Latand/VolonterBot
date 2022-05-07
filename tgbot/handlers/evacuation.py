@@ -60,8 +60,8 @@ async def evacuate_people_enter_conditions(message: Message, state: FSMContext, 
     current_request_id = await post_new_request(bot, config.channels.evacuation_channel_id, text_format,
                                                 state.storage, message.from_user.id)
     create_jobs(scheduler, message.from_user.id, current_request_id)
-
-    await message.answer(f'Спасибо, ваша заявка {current_request_id} была отправлена!')
+    await message.answer(text_format)
+    await message.answer(f'Ваша заявка №{current_request_id} была принята!')
 
     await state.clear()
 
