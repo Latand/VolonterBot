@@ -2,11 +2,11 @@ from aiogram import Router, F, Bot
 from aiogram.dispatcher.filters import ContentTypesFilter
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, ContentType
-from aiogram.utils.markdown import hbold, hcode
+from aiogram.utils.markdown import hbold
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
-from tgbot.misc.functions import google_maps_url, create_new_request, create_jobs, post_new_request, get_mention_user
+from tgbot.misc.functions import google_maps_url, create_jobs, post_new_request, get_mention_user
 from tgbot.misc.states import Evacuate
 
 evacuation_router = Router()
@@ -14,7 +14,7 @@ evacuation_router = Router()
 
 @evacuation_router.message(F.text == 'Эвакуация')
 async def evacuate_people(message: Message, state: FSMContext):
-    await message.answer('Введите предполагаемый адрес человека или пришлите локацию этого человека',
+    await message.answer('Введите точный адрес человека или пришлите его геолокацию',
                          reply_markup=ReplyKeyboardRemove())
     await state.set_state(Evacuate.EnterAddress)
 

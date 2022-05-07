@@ -15,7 +15,7 @@ search_people_router = Router()
 
 @search_people_router.message(F.text == 'Поиск людей')
 async def search_people(message: Message, state: FSMContext):
-    await message.answer('Введите предполагаемый адрес человека или пришлите локацию этого человека',
+    await message.answer('Введите точный адрес человека или пришлите геолокацию',
                          reply_markup=ReplyKeyboardRemove())
     await state.set_state(SearchPeople.EnterAddress)
 
@@ -41,7 +41,7 @@ async def search_people_enter_address(message: Message, state: FSMContext):
 async def search_people_enter_full_name(message: Message, state: FSMContext):
     full_name = message.text
     await state.update_data(full_name=full_name)
-    await message.answer('Отправьте фото человека')
+    await message.answer('Отправьте фото человека в анфас. В хорошем качестве')
     await state.set_state(SearchPeople.SendPhoto)
 
 
@@ -54,7 +54,7 @@ async def search_people_send_photo(message: Message, state: FSMContext, photo):
 
 @search_people_router.message(SearchPeople.SendPhoto)
 async def search_people_send_photo_failed(message: Message, state: FSMContext):
-    await message.answer('Вы не отправили фото. Попробуйте еще раз')
+    await message.answer('Вы не отправили фото. Отправьте фото человека в анфас. В хорошем качестве')
 
 
 @search_people_router.message(SearchPeople.EnterFeedbackAddress, F.text)

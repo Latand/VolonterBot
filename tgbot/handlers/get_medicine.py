@@ -24,7 +24,7 @@ async def get_medicine_enter_address_location(message: Message, state: FSMContex
     maps_url = google_maps_url(message.location.latitude, message.location.longitude)
     await state.update_data(address=maps_url)
     await message.answer('Введите названия лекарств, дозировку и количества.')
-    await state.set_state(GetMedicine.EnterPrescription)
+    await state.set_state(GetMedicine.EnterFullName)
 
 
 @medicine_router.message(GetMedicine.EnterAddress, F.text)
