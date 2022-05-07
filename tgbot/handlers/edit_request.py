@@ -14,11 +14,9 @@ edit_request_router = Router()
 async def edit_request_callback(call: CallbackQuery, state: FSMContext, callback_data: RequestCD, bot: Bot):
     requests = await state.storage.redis.get('requests') or '{}'
     requests = json.loads(requests)
-    logging.info(f'{requests}')
     request_id = str(callback_data.request_id)
     request = requests.get(request_id)
     if not request:
-        logging.info(f'No request with id {request_id}')
         await call.message.edit_text('Заявка не найдена')
         return
 
