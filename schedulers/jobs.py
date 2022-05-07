@@ -33,9 +33,9 @@ async def check_if_active(bot: Bot, current_request_id: int, storage: RedisStora
         channel_id = request['channel_id']
         message_id = request['message_id']
 
-        await bot.send_message(channel_id, f'Заявка #{current_request_id} уже не актуальная',
+        await bot.send_message(channel_id, f'‼️ Заявка №{current_request_id} уже не актуальная',
                                reply_to_message_id=message_id)
-        await bot.send_message(chat_id, f'Ваша заявка #{current_request_id} уже не актуальная')
+        await bot.send_message(chat_id, f'Ваша ‼️ Заявка №{current_request_id} уже не актуальная')
 
         request['status'] = 'inactive'
         requests[current_request_id] = request

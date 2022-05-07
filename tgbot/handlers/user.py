@@ -7,6 +7,7 @@ user_router = Router()
 
 
 @user_router.message(commands=["start"])
-async def user_start(message: Message):
+async def user_start(message: Message, state):
     await message.reply("Волонтёрский бот приветствует Вас! \n"
                         "Выберите один из вариантов помощи:", reply_markup=choose_help_type_keyboard)
+    await state.set_state(None)

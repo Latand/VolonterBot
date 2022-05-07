@@ -38,7 +38,7 @@ async def edit_request_callback(call: CallbackQuery, state: FSMContext, callback
         message_id = request['message_id']
         request['status'] = 'inactive'
 
-        await bot.send_message(channel_id, f'Заявка #{request_id} уже не актуальная',
+        await bot.send_message(channel_id, f'‼️ Заявка №{request_id} уже не актуальная',
                                reply_to_message_id=message_id)
 
     requests[request_id] = request
@@ -70,6 +70,6 @@ async def delete_request_handler(message: Message, state: FSMContext, bot: Bot):
         channel_id = request['channel_id']
         message_id = request['message_id']
 
-        await bot.send_message(channel_id, f'Заявка #{request_id} уже не актуальная',
+        await bot.send_message(channel_id, f'‼️ Заявка №{request_id} уже не актуальная',
                                reply_to_message_id=message_id)
     await state.clear()
