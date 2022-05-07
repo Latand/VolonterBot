@@ -3,6 +3,16 @@ from dataclasses import dataclass
 from environs import Env
 
 
+@dataclass
+class RedisConfig:
+    host: str
+    port: int
+    db: int
+    password: str
+
+    def dsn(self):
+        return f"redis://:{self.password}@{self.host}:{self.port}/{self.db}"
+
 
 @dataclass
 class Channels:
@@ -29,6 +39,7 @@ class Config:
     tg_bot: TgBot
     misc: Miscellaneous
     channels: Channels
+    redis_config: RedisConfig
 
 
 def load_config(path: str = None):
@@ -48,5 +59,11 @@ def load_config(path: str = None):
             medicine_channel_id=env.int('MEDICINE_CHANNEL_ID'),
             provision_channel_id=env.int('PROVISION_CHANNEL_ID'),
             evacuation_channel_id=env.int('EVACUATION_CHANNEL_ID')
-        )
+        ),
+        redis_config=RedisConfig(
+            host=env.str('REDIS_HOST'),
+            port=env.int('REDIS_PORT'),
+            db=env.int('REDIS_DB'),
+            password=env.str('REDIS_PASSWORD')
+        ),
     )

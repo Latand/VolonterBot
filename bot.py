@@ -2,10 +2,10 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
-from aiogram.dispatcher.fsm.storage.memory import MemoryStorage
+from aiogram.dispatcher.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 
+from schedulers.base import setup_scheduler
 from tgbot.config import load_config
-from tgbot.handlers.admin import admin_router
 from tgbot.handlers.evacuation import evacuation_router
 from tgbot.handlers.get_medicine import medicine_router
 from tgbot.handlers.provision import provision_router
@@ -37,13 +37,15 @@ async def main():
     logger.info("Starting bot")
     config = load_config(".env")
 
-    storage = MemoryStorage()
+    storage = RedisStorage.from_url(config.redis_config.dsn(), key_builder=DefaultKeyBuilder(with_bot_id=True))
     bot = Bot(token=config.tg_bot.token, parse_mode='HTML')
     dp = Dispatcher(storage=storage)
     json_settings = JSONStorage("storage.json")  # Insert the path to our JSON storage, created automatically
+    scheduler = setup_scheduler(bot, config)
 
     dp['config'] = config
     dp['json_settings'] = json_settings
+    dp['scheduler'] = scheduler
 
     for router in [
         # admin_router,

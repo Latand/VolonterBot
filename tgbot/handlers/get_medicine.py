@@ -2,12 +2,12 @@ from aiogram import Router, F, Bot
 from aiogram.dispatcher.filters import ContentTypesFilter
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, ContentType
-from aiogram.utils.markdown import hbold, hcode
+from aiogram.utils.markdown import hbold
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
-from tgbot.misc.functions import google_maps_url
+from tgbot.misc.functions import google_maps_url, post_new_request, create_jobs
 from tgbot.misc.states import GetMedicine
-from tgbot.services.json_storage import JSONStorage
 
 medicine_router = Router()
 
@@ -27,7 +27,7 @@ async def get_medicine_enter_address_location(message: Message, state: FSMContex
     await state.set_state(GetMedicine.EnterPrescription)
 
 
-@medicine_router.message(GetMedicine.EnterAddress)
+@medicine_router.message(GetMedicine.EnterAddress, F.text)
 async def get_medicine_enter_address(message: Message, state: FSMContext):
     address = message.text
     await state.update_data(address=address)
@@ -35,33 +35,32 @@ async def get_medicine_enter_address(message: Message, state: FSMContext):
     await state.set_state(GetMedicine.EnterFullName)
 
 
-@medicine_router.message(GetMedicine.EnterFullName)
+@medicine_router.message(GetMedicine.EnterFullName, F.text)
 async def get_medicine_enter_full_name(message: Message, state: FSMContext):
     await state.update_data(full_name=message.text)
     await message.answer('Введите названия лекарств, дозировку и количества.')
     await state.set_state(GetMedicine.EnterPrescription)
 
 
-@medicine_router.message(GetMedicine.EnterPrescription)
+@medicine_router.message(GetMedicine.EnterPrescription, F.text)
 async def get_medicine_enter_prescription(message: Message, state: FSMContext, config: Config, bot: Bot,
-                                          json_settings: JSONStorage):
+                                          scheduler: AsyncIOScheduler):
     data = await state.get_data()
-    counter = json_settings.get('counter') or 0
-    counter += 1
-    json_settings.set('counter', counter)
 
-    counter = hcode(f'#{counter}')
     address = data['address']
 
     prescription = hbold(message.text)
     full_name = hbold(data['full_name'])
 
-    text_format = '''{counter}
+    text_format = '''
 Адрес: {address}
 ФИО: {full_name}
 
 {prescription}
-'''.format(address=address, prescription=prescription, counter=counter, full_name=full_name)
-    await bot.send_message(config.channels.medicine_channel_id, text_format)
-    await message.answer(f'Спасибо, ваша заявка {counter} была отправлена!')
+'''.format(address=address, prescription=prescription, full_name=full_name)
+
+    current_request_id = await post_new_request(bot, text_format, config.channels.medicine_channel_id,
+                                                state.storage, message.from_user.id)
+    create_jobs(scheduler, message.from_user.id, current_request_id)
+    await message.answer(f'Спасибо, ваша заявка {current_request_id} была отправлена!')
     await state.clear()

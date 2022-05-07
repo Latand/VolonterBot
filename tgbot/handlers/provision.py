@@ -2,13 +2,12 @@ from aiogram import Router, F, Bot
 from aiogram.dispatcher.filters import ContentTypesFilter
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, ContentType, CallbackQuery
-from aiogram.utils.markdown import hbold, hcode
+from aiogram.utils.markdown import hbold
 
 from tgbot.config import Config
 from tgbot.keyboards.inline import get_types_of_provision_keyboard, TypesOfProvisionCD
-from tgbot.misc.functions import google_maps_url
+from tgbot.misc.functions import google_maps_url, create_jobs, post_new_request
 from tgbot.misc.states import GetProvision
-from tgbot.services.json_storage import JSONStorage
 
 provision_router = Router()
 
@@ -27,7 +26,7 @@ async def get_provision_enter_address_location(message: Message, state: FSMConte
     await state.set_state(GetProvision.EnterFullName)
 
 
-@provision_router.message(GetProvision.EnterAddress)
+@provision_router.message(GetProvision.EnterAddress, F.text)
 async def get_provision_enter_address(message: Message, state: FSMContext):
     address = message.text
     await state.update_data(address=address)
@@ -54,25 +53,6 @@ async def get_provision_enter_full_name(message: Message, state: FSMContext):
 
     await state.set_state(GetProvision.ChooseType)
 
-
-async def finish_choice(bot: Bot, state: FSMContext, config: Config, data: dict,
-                        counter):
-    address = data['address']
-
-    full_name = hbold(data.get('full_name'))
-    types_of_provision = data.get('types_of_provision', {})
-    types_of_provision_str = '\n'.join([f'{type_of_provision}: {num}'
-                                        for type_of_provision, num in types_of_provision.items()])
-
-    text_format = '''{counter}
-Адрес: {address}
-Имя: {full_name}
-
-Наборы:
-{types_of_provision_str}
-'''.format(address=address, full_name=full_name, types_of_provision_str=types_of_provision_str, counter=counter)
-    await bot.send_message(config.channels.provision_channel_id, text_format)
-    await state.clear()
 
 
 @provision_router.callback_query(GetProvision.ChooseType, TypesOfProvisionCD.filter(F.increase | F.decrease))
@@ -103,15 +83,26 @@ async def add_provision_choose_type_callback(callback_query: CallbackQuery, stat
 
 
 @provision_router.callback_query(GetProvision.ChooseType, TypesOfProvisionCD.filter(F.finish))
-async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContext, config: Config, bot: Bot,
-                                           json_settings: JSONStorage):
+async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContext, config: Config, bot: Bot, scheduler):
     data = await state.get_data()
-    counter = json_settings.get('counter') or 0
-    counter += 1
-    json_settings.set('counter', counter)
-    counter = hcode(f'#{counter}')
+    address = data['address']
 
-    await finish_choice(bot, state, config, data, counter)
+    full_name = hbold(data.get('full_name'))
+    types_of_provision = data.get('types_of_provision', {})
+    types_of_provision_str = '\n'.join([f'{type_of_provision}: {num}'
+                                        for type_of_provision, num in types_of_provision.items()])
 
-    await call.message.edit_text(f'Спасибо, ваша заявка {counter} была отправлена!')
+    text_format = '''
+    Адрес: {address}
+    Имя: {full_name}
+
+    Наборы:
+    {types_of_provision_str}
+    '''.format(address=address, full_name=full_name, types_of_provision_str=types_of_provision_str)
+
+    current_request_id = await post_new_request(bot, text_format, config.channels.provision_channel_id,
+                                                state.storage, call.from_user.id)
+    create_jobs(scheduler, call.from_user.id, current_request_id)
+
+    await call.message.edit_text(f'Спасибо, ваша заявка {current_request_id} была отправлена!')
     await state.clear()

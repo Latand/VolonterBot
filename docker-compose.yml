@@ -17,6 +17,16 @@ services:
     networks:
       - tg_bot
 
+  redis_cache:
+    image: redis:6.2-alpine
+    restart: always
+    command: redis-server --port $REDIS_PORT --save 20 1 --loglevel warning --requirepass $REDIS_PASSWORD
+    env_file:
+      - ".env"
+    volumes:
+      - ./cache:/data
+    networks:
+      - tg_bot
 
 networks:
   tg_bot:

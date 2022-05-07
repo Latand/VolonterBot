@@ -7,9 +7,8 @@ from aiogram.types import Message, ReplyKeyboardRemove, ContentType
 from aiogram.utils.markdown import hcode, hbold
 
 from tgbot.config import Config
-from tgbot.misc.functions import google_maps_url
+from tgbot.misc.functions import google_maps_url, create_jobs, create_new_request
 from tgbot.misc.states import SearchPeople
-from tgbot.services.json_storage import JSONStorage
 
 search_people_router = Router()
 
@@ -30,7 +29,7 @@ async def search_people_enter_address_location(message: Message, state: FSMConte
     await state.set_state(SearchPeople.EnterFullName)
 
 
-@search_people_router.message(SearchPeople.EnterAddress)
+@search_people_router.message(SearchPeople.EnterAddress, F.text)
 async def search_people_enter_address(message: Message, state: FSMContext):
     address = message.text
     await state.update_data(address=address)
@@ -38,7 +37,7 @@ async def search_people_enter_address(message: Message, state: FSMContext):
     await state.set_state(SearchPeople.EnterFullName)
 
 
-@search_people_router.message(SearchPeople.EnterFullName)
+@search_people_router.message(SearchPeople.EnterFullName, F.text)
 async def search_people_enter_full_name(message: Message, state: FSMContext):
     full_name = message.text
     await state.update_data(full_name=full_name)
@@ -46,9 +45,9 @@ async def search_people_enter_full_name(message: Message, state: FSMContext):
     await state.set_state(SearchPeople.SendPhoto)
 
 
-@search_people_router.message(SearchPeople.SendPhoto, F.photo)
-async def search_people_send_photo(message: Message, state: FSMContext):
-    await state.update_data(photo=message.photo[-1].file_id)
+@search_people_router.message(SearchPeople.SendPhoto, F.photo[-1].as_("photo"))
+async def search_people_send_photo(message: Message, state: FSMContext, photo):
+    await state.update_data(photo=photo.file_id)
     await message.answer('Куда сообщить, если найдётся? Введите номер телефона, к которому привязан Телеграм-аккаунт')
     await state.set_state(SearchPeople.EnterFeedbackAddress)
 
@@ -58,29 +57,34 @@ async def search_people_send_photo_failed(message: Message, state: FSMContext):
     await message.answer('Вы не отправили фото. Попробуйте еще раз')
 
 
-@search_people_router.message(SearchPeople.EnterFeedbackAddress)
+@search_people_router.message(SearchPeople.EnterFeedbackAddress, F.text)
 async def search_people_enter_feedback_address(message: Message, state: FSMContext, bot: Bot, config: Config,
-                                               json_settings: JSONStorage):
+                                               scheduler):
     data = await state.get_data()
 
-    counter = json_settings.get('counter') or 0
-    counter += 1
-    json_settings.set('counter', counter)
-    counter = hcode(f'#{counter}')
     address = data['address']
     photo = data['photo']
     full_name = hbold(data['full_name'])
     feedback_address = hbold(message.text)
-    text_format = '''{counter}
+    text_format = '''
 Адрес: {address}
 
 Имя: {full_name}
 Обратная связь: {feedback_address}
-'''.format(counter=counter, address=address, full_name=full_name, feedback_address=feedback_address)
+'''.format(address=address, full_name=full_name, feedback_address=feedback_address)
 
-    await bot.send_photo(chat_id=config.channels.search_channel_id,
-                         photo=photo,
-                         caption=text_format)
+    sent_message = await bot.send_photo(chat_id=config.channels.search_channel_id,
+                                        photo=photo,
+                                        caption=text_format)
+
+    current_request_id = await create_new_request(state.storage, message.from_user.id,
+                                                  config.channels.search_channel_id,
+                                                  sent_message.message_id)
+    counter = hcode(f'#{current_request_id}')
+    text_format_post = f'{counter}\n' + text_format
+    await sent_message.edit_caption(text_format_post)
+
+    create_jobs(scheduler, message.from_user.id, current_request_id)
 
     await message.answer(f'Спасибо, ваша заявка {counter} была отправлена!')
     await state.clear()

@@ -3,11 +3,11 @@ from aiogram.dispatcher.filters import ContentTypesFilter
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, ContentType
 from aiogram.utils.markdown import hbold, hcode
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
-from tgbot.misc.functions import google_maps_url
+from tgbot.misc.functions import google_maps_url, create_new_request, create_jobs, post_new_request
 from tgbot.misc.states import Evacuate
-from tgbot.services.json_storage import JSONStorage
 
 evacuation_router = Router()
 
@@ -45,24 +45,23 @@ async def evacuate_people_enter_full_name(message: Message, state: FSMContext):
 
 @evacuation_router.message(Evacuate.EnterSpecialConditions)
 async def evacuate_people_enter_conditions(message: Message, state: FSMContext, bot: Bot, config: Config,
-                                           json_settings: JSONStorage):
-    counter = json_settings.get('counter') or 0
-    counter += 1
-    json_settings.set('counter', counter)
-
+                                           scheduler: AsyncIOScheduler):
     data = await state.get_data()
     special_conditions = hbold(message.text)
     address = data['address']
-
     full_name = hbold(data['full_name'])
-    counter = hcode(f'#{counter}')
-    text_format = '''{counter}
+    text_format = '''
 Адрес: {address}
 
 Имя: {full_name}
 Специальные условия: {special_conditions}
-'''.format(special_conditions=special_conditions, counter=counter, address=address, full_name=full_name)
+'''.format(special_conditions=special_conditions, address=address, full_name=full_name)
 
-    await bot.send_message(config.channels.evacuation_channel_id, text_format)
-    await message.answer(f'Спасибо, ваша заявка {counter} была отправлена!')
+    current_request_id = await post_new_request(bot, text_format, config.channels.evacuation_channel_id,
+                                                state.storage, message.from_user.id)
+    create_jobs(scheduler, message.from_user.id, current_request_id)
+
+    await message.answer(f'Спасибо, ваша заявка {current_request_id} была отправлена!')
+
     await state.clear()
+
