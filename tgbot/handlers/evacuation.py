@@ -6,7 +6,7 @@ from aiogram.utils.markdown import hbold, hcode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
-from tgbot.misc.functions import google_maps_url, create_new_request, create_jobs, post_new_request
+from tgbot.misc.functions import google_maps_url, create_new_request, create_jobs, post_new_request, get_mention_user
 from tgbot.misc.states import Evacuate
 
 evacuation_router = Router()
@@ -50,12 +50,14 @@ async def evacuate_people_enter_conditions(message: Message, state: FSMContext, 
     special_conditions = hbold(message.text)
     address = data['address']
     full_name = hbold(data['full_name'])
+    sender = get_mention_user(message.from_user)
     text_format = '''
 Адрес: {address}
 
 Имя: {full_name}
 Специальные условия: {special_conditions}
-'''.format(special_conditions=special_conditions, address=address, full_name=full_name)
+Отправитель: {sender}
+'''.format(special_conditions=special_conditions, address=address, full_name=full_name, sender=sender)
 
     current_request_id = await post_new_request(bot, config.channels.evacuation_channel_id, text_format,
                                                 state.storage, message.from_user.id)
@@ -64,4 +66,3 @@ async def evacuate_people_enter_conditions(message: Message, state: FSMContext, 
     await message.answer(f'Ваша заявка №{current_request_id} была принята!')
 
     await state.clear()
-

@@ -6,7 +6,7 @@ from aiogram.utils.markdown import hbold
 
 from tgbot.config import Config
 from tgbot.keyboards.inline import get_types_of_provision_keyboard, TypesOfProvisionCD
-from tgbot.misc.functions import google_maps_url, create_jobs, post_new_request
+from tgbot.misc.functions import google_maps_url, create_jobs, post_new_request, get_mention_user
 from tgbot.misc.states import GetProvision
 
 provision_router = Router()
@@ -98,14 +98,16 @@ async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContex
     types_of_provision_str = '\n'.join([f'{type_of_provision}: {num}'
                                         for type_of_provision, num in types_of_provision.items()
                                         if num > 0])
-
+    sender = get_mention_user(call.from_user)
     text_format = '''
 Адрес: {address}
 Имя: {full_name}
 
 Наборы:
 {types_of_provision_str}
-'''.format(address=address, full_name=full_name, types_of_provision_str=types_of_provision_str)
+
+Отправитель: {sender}
+'''.format(address=address, full_name=full_name, types_of_provision_str=types_of_provision_str, sender=sender)
 
     current_request_id = await post_new_request(bot, config.channels.provision_channel_id, text_format,
                                                 state.storage, call.from_user.id)

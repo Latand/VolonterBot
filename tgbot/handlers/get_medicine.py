@@ -6,7 +6,7 @@ from aiogram.utils.markdown import hbold
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
-from tgbot.misc.functions import google_maps_url, post_new_request, create_jobs
+from tgbot.misc.functions import google_maps_url, post_new_request, create_jobs, get_mention_user
 from tgbot.misc.states import GetMedicine
 
 medicine_router = Router()
@@ -48,6 +48,7 @@ async def get_medicine_enter_prescription(message: Message, state: FSMContext, c
     data = await state.get_data()
 
     address = data['address']
+    sender = get_mention_user(message.from_user)
 
     prescription = hbold(message.text)
     full_name = hbold(data['full_name'])
@@ -57,7 +58,9 @@ async def get_medicine_enter_prescription(message: Message, state: FSMContext, c
 ФИО: {full_name}
 
 {prescription}
-'''.format(address=address, prescription=prescription, full_name=full_name)
+
+Отправитель: {sender}
+'''.format(address=address, prescription=prescription, full_name=full_name, sender=sender)
 
     current_request_id = await post_new_request(bot, config.channels.medicine_channel_id, text_format,
                                                 state.storage, message.from_user.id)

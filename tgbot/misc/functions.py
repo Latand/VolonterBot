@@ -2,6 +2,7 @@ import datetime
 import json
 
 from aiogram.dispatcher.fsm.storage.redis import RedisStorage
+from aiogram.types import User
 from aiogram.utils.markdown import hcode
 from apscheduler.triggers.date import DateTrigger
 
@@ -55,3 +56,8 @@ async def post_new_request(bot, channel_id, text, storage, user_id):
     text_format_post = f'{counter}\n' + text
     await sent_message.edit_text(text_format_post)
     return current_request_id
+
+
+def get_mention_user(user: User):
+    username = f"@{user.username}" or ''
+    return f"<a href='tg://user?id={user.id}'>{user.full_name}</a> {username}"

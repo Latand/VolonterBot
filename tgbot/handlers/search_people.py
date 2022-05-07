@@ -7,7 +7,7 @@ from aiogram.types import Message, ReplyKeyboardRemove, ContentType
 from aiogram.utils.markdown import hcode, hbold
 
 from tgbot.config import Config
-from tgbot.misc.functions import google_maps_url, create_jobs, create_new_request
+from tgbot.misc.functions import google_maps_url, create_jobs, create_new_request, get_mention_user
 from tgbot.misc.states import SearchPeople
 
 search_people_router = Router()
@@ -66,12 +66,16 @@ async def search_people_enter_feedback_address(message: Message, state: FSMConte
     photo = data['photo']
     full_name = hbold(data['full_name'])
     feedback_address = hbold(message.text)
+    sender = get_mention_user(message.from_user)
+
     text_format = '''
 Адрес: {address}
 
 Имя: {full_name}
 Обратная связь: {feedback_address}
-'''.format(address=address, full_name=full_name, feedback_address=feedback_address)
+
+Отправитель: {sender}
+'''.format(address=address, full_name=full_name, feedback_address=feedback_address, sender=sender)
 
     sent_message = await bot.send_photo(chat_id=config.channels.search_channel_id,
                                         photo=photo,
