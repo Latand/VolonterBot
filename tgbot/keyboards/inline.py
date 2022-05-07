@@ -9,8 +9,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 class TypesOfProvisionCD(CallbackData, prefix="type_of_provision"):
     type: Optional[str]
     increase: Optional[bool]
-    decrease: Optional[bool]
     finish: Optional[bool]
+    reset: Optional[bool]
 
 
 class RequestCD(CallbackData, prefix="request"):
@@ -27,10 +27,6 @@ def get_types_of_provision_keyboard(provision_types: dict):
                 text=f'{provision_type} ({quantity})',
                 callback_data=TypesOfProvisionCD(type=provision_type).pack(),
             ),
-            InlineKeyboardButton(
-                text="-",
-                callback_data=TypesOfProvisionCD(type=provision_type, decrease=True).pack(),
-            ),
 
             InlineKeyboardButton(
                 text="+",
@@ -39,10 +35,14 @@ def get_types_of_provision_keyboard(provision_types: dict):
         )
 
     builder.add(
-        InlineKeyboardButton(text='Завершить ✔', callback_data=TypesOfProvisionCD(finish=True).pack()))
+        InlineKeyboardButton(text='Отправить ✔', callback_data=TypesOfProvisionCD(finish=True).pack())
+    )
+    builder.add(
+        InlineKeyboardButton(text='Сброс ❌', callback_data=TypesOfProvisionCD(reset=True).pack())
+    )
     builder.adjust(
-        *[3] * len(provision_types),  # [name, +, -]
-        1  # [finish]
+        *[2] * len(provision_types),  # [name, +]
+        1, 2  # [finish]
     )
 
     return builder.as_markup()

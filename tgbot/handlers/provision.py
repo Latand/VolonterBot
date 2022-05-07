@@ -54,8 +54,7 @@ async def get_provision_enter_full_name(message: Message, state: FSMContext):
     await state.set_state(GetProvision.ChooseType)
 
 
-
-@provision_router.callback_query(GetProvision.ChooseType, TypesOfProvisionCD.filter(F.increase | F.decrease))
+@provision_router.callback_query(GetProvision.ChooseType, TypesOfProvisionCD.filter(F.increase))
 async def add_provision_choose_type_callback(callback_query: CallbackQuery, state: FSMContext,
                                              callback_data: TypesOfProvisionCD):
     data = await state.get_data()
@@ -68,16 +67,23 @@ async def add_provision_choose_type_callback(callback_query: CallbackQuery, stat
     else:
         if callback_data.increase:
             types_of_provision[provision_type] += 1
-        elif callback_data.decrease:
-            if types_of_provision[provision_type] > 0:
-                types_of_provision[provision_type] -= 1
-            else:
-                await callback_query.answer('Нельзя менять количество наборов в отрицательное значение',
-                                            show_alert=True)
-                return
 
     await state.update_data(types_of_provision=types_of_provision)
     keyboard = get_types_of_provision_keyboard(types_of_provision)
+
+    await callback_query.message.edit_reply_markup(reply_markup=keyboard)
+
+
+@provision_router.callback_query(GetProvision.ChooseType, TypesOfProvisionCD.filter(F.reset))
+async def reset_provision_choose_type_callback(callback_query: CallbackQuery, state: FSMContext,
+                                               callback_data: TypesOfProvisionCD):
+    types_of_provision_allowed = {
+        'Взрослый': 0,
+        'Детский': 0,
+        'Грудничковый': 0
+    }
+    await state.update_data(types_of_provision=types_of_provision_allowed)
+    keyboard = get_types_of_provision_keyboard(types_of_provision_allowed)
 
     await callback_query.message.edit_reply_markup(reply_markup=keyboard)
 
@@ -90,7 +96,8 @@ async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContex
     full_name = hbold(data.get('full_name'))
     types_of_provision = data.get('types_of_provision', {})
     types_of_provision_str = '\n'.join([f'{type_of_provision}: {num}'
-                                        for type_of_provision, num in types_of_provision.items()])
+                                        for type_of_provision, num in types_of_provision.items()
+                                        if num > 0])
 
     text_format = '''
 Адрес: {address}
