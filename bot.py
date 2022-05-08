@@ -51,12 +51,12 @@ async def main():
 
     for router in [
         admin_router,
+        edit_request_router,
         user_router,
         evacuation_router,
         medicine_router,
         provision_router,
         search_people_router,
-        edit_request_router,
     ]:
         dp.include_router(router)
 

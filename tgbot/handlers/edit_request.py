@@ -53,6 +53,12 @@ async def edit_request_callback(call: CallbackQuery, state: FSMContext, callback
     await state.storage.redis.set('requests', json.dumps(requests))
 
 
+@edit_request_router.message(commands=['cancel'])
+async def cancel_request(message: Message, state: FSMContext):
+    await message.answer('Вы отменили создание заявки')
+    await state.set_state(None)
+
+
 @edit_request_router.message(commands=['delete_request'])
 async def delete_request(message: Message, state: FSMContext):
     await message.answer('Введите номер заявки для удаления')
@@ -67,9 +73,10 @@ async def delete_request_handler(message: Message, state: FSMContext, bot: Bot):
     request = requests.get(request_id)
     if not request:
         await message.answer(f'Заявка №{request_id} не найдена')
-    if request['chat_id'] != message.from_user.id:
+        return
+    elif request['chat_id'] != message.from_user.id:
         await message.answer(f'Заявка №{request_id} не ваша')
-    if request['status'] == 'inactive':
+    elif request['status'] == 'inactive':
         await message.answer(f'Заявка №{request_id} не активна')
     else:
         await message.answer(f'Заявка №{request_id} удалена')
