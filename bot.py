@@ -6,6 +6,7 @@ from aiogram.dispatcher.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 
 from schedulers.base import setup_scheduler
 from tgbot.config import load_config
+from tgbot.handlers.admin import admin_router
 from tgbot.handlers.edit_request import edit_request_router
 from tgbot.handlers.evacuation import evacuation_router
 from tgbot.handlers.get_medicine import medicine_router
@@ -49,7 +50,7 @@ async def main():
     dp['scheduler'] = scheduler
 
     for router in [
-        # admin_router,
+        admin_router,
         user_router,
         evacuation_router,
         medicine_router,

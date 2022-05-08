@@ -5,21 +5,29 @@ from aiogram import Router, Bot
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
+from tgbot.config import Config
 from tgbot.keyboards.inline import RequestCD
-from tgbot.misc.functions import create_jobs
+from tgbot.misc.functions import create_jobs, get_mention_user
 
 edit_request_router = Router()
 
 
 @edit_request_router.callback_query(RequestCD.filter())
 async def edit_request_callback(call: CallbackQuery, state: FSMContext, callback_data: RequestCD, bot: Bot,
-                                scheduler):
+                                scheduler, config: Config):
     requests = await state.storage.redis.get('requests') or '{}'
     requests = json.loads(requests)
     request_id = str(callback_data.request_id)
     request = requests.get(request_id)
     if not request:
         await call.message.edit_text(f'Заявка №{request_id} не найдена')
+        return
+    if request['chat_id'] != call.from_user.id:
+        await call.message.edit_text(f'Произошла ошибка... Сообщение отправлено администратору')
+
+        await bot.send_message(config.tg_bot.admin_ids[-1],
+                               f'‼️ Заявка №{request_id} от {get_mention_user(call.from_user)} уже не '
+                               f'актуальная')
         return
 
     if request['status'] == 'inactive':

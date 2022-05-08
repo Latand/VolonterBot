@@ -31,7 +31,7 @@ async def evacuate_people_enter_address_location(message: Message, state: FSMCon
 async def evacuate_people_enter_address(message: Message, state: FSMContext):
     address = message.text
     await state.update_data(address=address)
-    await message.answer('Введите имя человека')
+    await message.answer('Введите Фамилию, Имя и Отчество человека')
     await state.set_state(Evacuate.EnterFullName)
 
 

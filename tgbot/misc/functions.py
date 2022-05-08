@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 
 from aiogram.dispatcher.fsm.storage.redis import RedisStorage
 from aiogram.types import User
@@ -18,21 +19,26 @@ async def create_new_request(storage: RedisStorage, user_id: int, channel_id: in
     requests = await storage.redis.get('requests') or '{}'
     requests = json.loads(requests)
     current_request_id = len(requests) + 1
-    requests[current_request_id] = {
+    logging.info(f'Len of requests: {len(requests)}')
+    while str(current_request_id) in requests:
+        current_request_id += 1
+    new_request_id = str(current_request_id)
+    logging.info(f'New request id: {new_request_id}')
+    requests[new_request_id] = {
         'chat_id': user_id,
         'channel_id': channel_id,
         'message_id': message_id,
         'status': 'new',
     }
     await storage.redis.set('requests', json.dumps(requests))
-    return current_request_id
+    return new_request_id
 
 
 def create_jobs(scheduler, user_id, current_request_id):
-    time_to_ask = datetime.datetime.now() + datetime.timedelta(minutes=1)
-    # time_to_ask = datetime.datetime.now() + datetime.timedelta(hours=24)
-    time_to_check = datetime.datetime.now() + datetime.timedelta(minutes=2)
-    # time_to_check = datetime.datetime.now() + datetime.timedelta(hours=36)
+    # time_to_ask = datetime.datetime.now() + datetime.timedelta(minutes=1)
+    time_to_ask = datetime.datetime.now() + datetime.timedelta(hours=24)
+    # time_to_check = datetime.datetime.now() + datetime.timedelta(minutes=2)
+    time_to_check = datetime.datetime.now() + datetime.timedelta(hours=36)
 
     scheduler.add_job(
         ask_if_active,
@@ -59,5 +65,5 @@ async def post_new_request(bot, channel_id, text, storage, user_id):
 
 
 def get_mention_user(user: User):
-    username = f"@{user.username}" or ''
+    username = f"@{user.username}" if user.username else ''
     return f"<a href='tg://user?id={user.id}'>{user.full_name}</a> {username}"

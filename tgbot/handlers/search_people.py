@@ -25,7 +25,7 @@ async def search_people_enter_address_location(message: Message, state: FSMConte
     maps_url = google_maps_url(message.location.latitude, message.location.longitude)
     logging.info(maps_url)
     await state.update_data(address=maps_url)
-    await message.answer('Введите имя человека')
+    await message.answer('Введите Фамилию, Имя и Отчество человека')
     await state.set_state(SearchPeople.EnterFullName)
 
 
