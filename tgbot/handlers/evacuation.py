@@ -23,7 +23,7 @@ async def evacuate_people(message: Message, state: FSMContext):
 async def evacuate_people_enter_address_location(message: Message, state: FSMContext):
     maps_url = google_maps_url(message.location.latitude, message.location.longitude)
     await state.update_data(address=maps_url)
-    await message.answer('Введите имя человека')
+    await message.answer('Введите Фамилию, Имя и Отчество человека')
     await state.set_state(Evacuate.EnterFullName)
 
 
