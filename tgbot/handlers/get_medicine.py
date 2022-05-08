@@ -43,14 +43,21 @@ async def get_medicine_enter_full_name(message: Message, state: FSMContext):
 
 
 @medicine_router.message(GetMedicine.EnterPrescription, F.text)
-async def get_medicine_enter_prescription(message: Message, state: FSMContext, config: Config, bot: Bot,
-                                          scheduler: AsyncIOScheduler):
+async def get_medicine_enter_prescription(message: Message, state: FSMContext):
+    await state.update_data(prescription=message.text)
+    await message.answer('Тут напишите послание. Кто ищет, что передать?')
+    await state.set_state(GetMedicine.EnterAdditionalMessage)
+
+
+@medicine_router.message(GetMedicine.EnterAdditionalMessage, F.text)
+async def get_medicine_enter_additional_message(message: Message, state: FSMContext, config: Config, bot: Bot,
+                                                scheduler: AsyncIOScheduler):
     data = await state.get_data()
 
     address = data['address']
+    prescription = data['prescription']
     sender = get_mention_user(message.from_user)
-
-    prescription = hbold(message.text)
+    additional_message = message.text
     full_name = hbold(data['full_name'])
 
     text_format = '''
@@ -58,13 +65,14 @@ async def get_medicine_enter_prescription(message: Message, state: FSMContext, c
 ФИО: {full_name}
 
 {prescription}
+Послание: {additional_message}
 
 Отправитель: {sender}
-'''.format(address=address, prescription=prescription, full_name=full_name, sender=sender)
+'''.format(address=address, prescription=prescription, full_name=full_name, sender=sender,
+           additional_message=additional_message)
 
     current_request_id = await post_new_request(bot, config.channels.medicine_channel_id, text_format,
                                                 state.storage, message.from_user.id)
     create_jobs(scheduler, message.from_user.id, current_request_id)
-    await message.answer(text_format)
-    await message.answer(f'Ваша заявка №{current_request_id} была принята!')
+    await message.answer(f'Ваша заявка №{current_request_id} была принята!' + '\n\n' + text_format)
     await state.clear()

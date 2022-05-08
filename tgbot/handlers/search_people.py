@@ -13,7 +13,7 @@ from tgbot.misc.states import SearchPeople
 search_people_router = Router()
 
 
-@search_people_router.message(F.text == 'Поиск людей')
+@search_people_router.message(F.text == 'Навестить человека')
 async def search_people(message: Message, state: FSMContext):
     await message.answer('Введите точный адрес человека или пришлите геолокацию',
                          reply_markup=ReplyKeyboardRemove())
@@ -58,14 +58,22 @@ async def search_people_send_photo_failed(message: Message, state: FSMContext):
 
 
 @search_people_router.message(SearchPeople.EnterFeedbackAddress, F.text)
-async def search_people_enter_feedback_address(message: Message, state: FSMContext, bot: Bot, config: Config,
-                                               scheduler):
+async def search_people_enter_feedback_address(message: Message, state: FSMContext):
+    feedback_address = hbold(message.text)
+    await state.update_data(feedback_address=feedback_address)
+    await message.answer('Тут напишите послание. Кто ищет, что передать?')
+    await state.set_state(SearchPeople.EnterAdditionalMessage)
+
+
+@search_people_router.message(SearchPeople.EnterAdditionalMessage, F.text)
+async def search_people_enter_additional_message(message: Message, state: FSMContext, bot: Bot, config: Config,
+                                                 scheduler):
     data = await state.get_data()
 
     address = data['address']
     photo = data['photo']
+    feedback_address = data['feedback_address']
     full_name = hbold(data['full_name'])
-    feedback_address = hbold(message.text)
     sender = get_mention_user(message.from_user)
 
     text_format = '''
@@ -74,8 +82,11 @@ async def search_people_enter_feedback_address(message: Message, state: FSMConte
 Имя: {full_name}
 Обратная связь: {feedback_address}
 
+Послание: {additional_message}
+
 Отправитель: {sender}
-'''.format(address=address, full_name=full_name, feedback_address=feedback_address, sender=sender)
+'''.format(address=address, full_name=full_name, feedback_address=feedback_address, sender=sender,
+           additional_message=message.text)
 
     sent_message = await bot.send_photo(chat_id=config.channels.search_channel_id,
                                         photo=photo,
@@ -89,6 +100,6 @@ async def search_people_enter_feedback_address(message: Message, state: FSMConte
     await sent_message.edit_caption(text_format_post)
 
     create_jobs(scheduler, message.from_user.id, current_request_id)
-    await message.answer_photo(photo, caption=text_format_post)
-    await message.answer(f'Спасибо, ваша заявка {counter} была отправлена!')
+    await message.answer_photo(photo,
+                               caption=f'Спасибо, ваша заявка {counter} была отправлена!' + '\n\n' + text_format_post)
     await state.clear()

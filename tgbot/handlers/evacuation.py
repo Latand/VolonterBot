@@ -44,10 +44,20 @@ async def evacuate_people_enter_full_name(message: Message, state: FSMContext):
 
 
 @evacuation_router.message(Evacuate.EnterSpecialConditions)
-async def evacuate_people_enter_conditions(message: Message, state: FSMContext, bot: Bot, config: Config,
-                                           scheduler: AsyncIOScheduler):
-    data = await state.get_data()
+async def evacuate_people_enter_conditions(message: Message, state: FSMContext):
     special_conditions = hbold(message.text)
+    await state.update_data(special_conditions=special_conditions)
+    await message.answer('Тут напишите послание. Кто ищет, что передать?')
+    await state.set_state(Evacuate.EnterAdditionalMessage)
+
+
+@evacuation_router.message(Evacuate.EnterAdditionalMessage, F.text)
+async def evacuate_people_enter_additional_message(message: Message, state: FSMContext, bot: Bot, config: Config,
+                                                   scheduler: AsyncIOScheduler):
+    additional_message = message.text
+
+    data = await state.get_data()
+    special_conditions = data['special_conditions']
     address = data['address']
     full_name = hbold(data['full_name'])
     sender = get_mention_user(message.from_user)
@@ -56,13 +66,15 @@ async def evacuate_people_enter_conditions(message: Message, state: FSMContext, 
 
 Имя: {full_name}
 Специальные условия: {special_conditions}
+Послание: {additional_message}
+
 Отправитель: {sender}
-'''.format(special_conditions=special_conditions, address=address, full_name=full_name, sender=sender)
+'''.format(special_conditions=special_conditions, address=address, full_name=full_name, sender=sender,
+           additional_message=additional_message)
 
     current_request_id = await post_new_request(bot, config.channels.evacuation_channel_id, text_format,
                                                 state.storage, message.from_user.id)
     create_jobs(scheduler, message.from_user.id, current_request_id)
-    await message.answer(text_format)
-    await message.answer(f'Ваша заявка №{current_request_id} была принята!')
+    await message.answer(f'Ваша заявка №{current_request_id} была принята!' + '\n\n' + text_format)
 
     await state.clear()

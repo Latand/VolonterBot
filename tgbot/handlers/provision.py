@@ -89,7 +89,14 @@ async def reset_provision_choose_type_callback(callback_query: CallbackQuery, st
 
 
 @provision_router.callback_query(GetProvision.ChooseType, TypesOfProvisionCD.filter(F.finish))
-async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContext, config: Config, bot: Bot, scheduler):
+async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContext):
+    await call.message.edit_text('Тут напишите послание. Кто ищет, что передать?')
+    await state.set_state(GetProvision.EnterAdditionalMessage)
+
+
+@provision_router.message(GetProvision.EnterAdditionalMessage, F.text)
+async def add_provision_enter_additional_message(message: Message, state: FSMContext, config: Config, bot: Bot,
+                                                 scheduler):
     data = await state.get_data()
     address = data['address']
 
@@ -98,7 +105,8 @@ async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContex
     types_of_provision_str = '\n'.join([f'{type_of_provision}: {num}'
                                         for type_of_provision, num in types_of_provision.items()
                                         if num > 0])
-    sender = get_mention_user(call.from_user)
+
+    sender = get_mention_user(message.from_user)
     text_format = '''
 Адрес: {address}
 Имя: {full_name}
@@ -106,12 +114,14 @@ async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContex
 Наборы:
 {types_of_provision_str}
 
+Послание: {additional_message}
+
 Отправитель: {sender}
-'''.format(address=address, full_name=full_name, types_of_provision_str=types_of_provision_str, sender=sender)
+'''.format(address=address, full_name=full_name, types_of_provision_str=types_of_provision_str, sender=sender,
+           additional_message=message.text)
 
     current_request_id = await post_new_request(bot, config.channels.provision_channel_id, text_format,
-                                                state.storage, call.from_user.id)
-    create_jobs(scheduler, call.from_user.id, current_request_id)
-    await call.message.answer(text_format)
-    await call.message.edit_text(f'Ваша заявка №{current_request_id} была принята!')
+                                                state.storage, message.from_user.id)
+    create_jobs(scheduler, message.from_user.id, current_request_id)
+    await message.answer(f'Ваша заявка №{current_request_id} была принята!' + '\n\n' + text_format)
     await state.clear()
