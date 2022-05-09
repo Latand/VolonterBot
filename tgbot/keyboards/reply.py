@@ -5,7 +5,7 @@ choose_help_type_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text="Навестить человека"),
-            KeyboardButton(text="Еда и вода"),
+            # KeyboardButton(text="Еда и вода"),
         ],
         [
             KeyboardButton(text="Лекарства"),

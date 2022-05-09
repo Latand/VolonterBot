@@ -22,16 +22,15 @@ async def edit_request_callback(call: CallbackQuery, state: FSMContext, callback
     if not request:
         await call.message.edit_text(f'Заявка №{request_id} не найдена')
         return
-    if request['chat_id'] != call.from_user.id:
-        await call.message.edit_text(f'Произошла ошибка... Сообщение отправлено администратору')
-
-        await bot.send_message(config.tg_bot.admin_ids[-1],
-                               f'‼️ Заявка №{request_id} от {get_mention_user(call.from_user)} уже не '
-                               f'актуальная')
-        return
 
     if request['status'] == 'inactive':
         await call.message.edit_text(f'Заявка №{request_id} не может быть изменена')
+        return
+    if request['chat_id'] != call.from_user.id:
+        await call.message.edit_text(f'Произошла ошибка... Сообщение отправлено администратору')
+        actual_text = 'Актуальная' if callback_data.active else 'Не актуальная'
+        await bot.send_message(config.tg_bot.admin_ids[-1],
+                               f'‼️ Заявка №{request_id} от {get_mention_user(call.from_user)} {actual_text}')
         return
 
     if callback_data.active:
