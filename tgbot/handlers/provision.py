@@ -96,7 +96,7 @@ async def add_provision_choose_type_finish(call: CallbackQuery, state: FSMContex
 
 @provision_router.message(GetProvision.EnterAdditionalMessage, F.text)
 async def add_provision_enter_additional_message(message: Message, state: FSMContext, config: Config, bot: Bot,
-                                                 scheduler):
+                                                 scheduler, session):
     data = await state.get_data()
     address = data['address']
 
@@ -121,7 +121,7 @@ async def add_provision_enter_additional_message(message: Message, state: FSMCon
            additional_message=message.text)
 
     current_request_id = await post_new_request(bot, config.channels.provision_channel_id, text_format,
-                                                state.storage, message.from_user.id)
+                                                session, message.from_user.id)
     create_jobs(scheduler, message.from_user.id, current_request_id)
     await message.answer(f'Ваша заявка №{current_request_id} была принята!' + '\n\n' + text_format)
     await state.clear()

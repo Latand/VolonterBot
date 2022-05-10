@@ -1,13 +1,12 @@
 import datetime
-import json
-import logging
 
-from aiogram.dispatcher.fsm.storage.redis import RedisStorage
 from aiogram.types import User
 from aiogram.utils.markdown import hcode
 from apscheduler.triggers.date import DateTrigger
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from schedulers.jobs import ask_if_active, check_if_active
+from tgbot.infrastructure.database.functions.requests import add_request
 
 
 def google_maps_url(lat, lon):
@@ -15,23 +14,10 @@ def google_maps_url(lat, lon):
     return url.format(lat=lat, lon=lon)
 
 
-async def create_new_request(storage: RedisStorage, user_id: int, channel_id: int, message_id: int):
-    requests = await storage.redis.get('requests') or '{}'
-    requests = json.loads(requests)
-    current_request_id = len(requests) + 1
-    logging.info(f'Len of requests: {len(requests)}')
-    while str(current_request_id) in requests:
-        current_request_id += 1
-    new_request_id = str(current_request_id)
-    logging.info(f'New request id: {new_request_id}')
-    requests[new_request_id] = {
-        'chat_id': user_id,
-        'channel_id': channel_id,
-        'message_id': message_id,
-        'status': 'new',
-    }
-    await storage.redis.set('requests', json.dumps(requests))
-    return new_request_id
+async def create_new_request(session: AsyncSession, user_id: int, channel_id: int, message_id: int):
+    request_id = await add_request(session, user_id, channel_id, message_id)
+
+    return request_id
 
 
 def create_jobs(scheduler, user_id, current_request_id):
@@ -39,7 +25,7 @@ def create_jobs(scheduler, user_id, current_request_id):
     time_to_ask = datetime.datetime.now() + datetime.timedelta(hours=24)
     # time_to_check = datetime.datetime.now() + datetime.timedelta(minutes=2)
     time_to_check = datetime.datetime.now() + datetime.timedelta(hours=36)
-
+    #
     scheduler.add_job(
         ask_if_active,
         trigger=DateTrigger(time_to_ask),
@@ -52,10 +38,10 @@ def create_jobs(scheduler, user_id, current_request_id):
     )
 
 
-async def post_new_request(bot, channel_id, text, storage, user_id):
+async def post_new_request(bot, channel_id, text, session, user_id):
     sent_message = await bot.send_message(channel_id, text)
 
-    current_request_id = await create_new_request(storage, user_id,
+    current_request_id = await create_new_request(session, user_id,
                                                   channel_id,
                                                   sent_message.message_id)
     counter = hcode(f'#{current_request_id}')

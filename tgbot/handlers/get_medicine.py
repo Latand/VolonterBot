@@ -51,7 +51,7 @@ async def get_medicine_enter_prescription(message: Message, state: FSMContext):
 
 @medicine_router.message(GetMedicine.EnterAdditionalMessage, F.text)
 async def get_medicine_enter_additional_message(message: Message, state: FSMContext, config: Config, bot: Bot,
-                                                scheduler: AsyncIOScheduler):
+                                                scheduler: AsyncIOScheduler, session):
     data = await state.get_data()
 
     address = data['address']
@@ -72,7 +72,7 @@ async def get_medicine_enter_additional_message(message: Message, state: FSMCont
            additional_message=additional_message)
 
     current_request_id = await post_new_request(bot, config.channels.medicine_channel_id, text_format,
-                                                state.storage, message.from_user.id)
+                                                session, message.from_user.id)
     create_jobs(scheduler, message.from_user.id, current_request_id)
     await message.answer(f'Ваша заявка №{current_request_id} была принята!' + '\n\n' + text_format)
     await state.clear()

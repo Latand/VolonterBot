@@ -4,3 +4,5 @@ redis
 apscheduler==3.9.1
 apscheduler_di
 tzlocal==4.2
+sqlalchemy~=1.4
+asyncpg

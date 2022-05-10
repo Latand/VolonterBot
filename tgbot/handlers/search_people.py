@@ -67,7 +67,7 @@ async def search_people_enter_feedback_address(message: Message, state: FSMConte
 
 @search_people_router.message(SearchPeople.EnterAdditionalMessage, F.text)
 async def search_people_enter_additional_message(message: Message, state: FSMContext, bot: Bot, config: Config,
-                                                 scheduler):
+                                                 scheduler, session):
     data = await state.get_data()
 
     address = data['address']
@@ -92,7 +92,7 @@ async def search_people_enter_additional_message(message: Message, state: FSMCon
                                         photo=photo,
                                         caption=text_format)
 
-    current_request_id = await create_new_request(state.storage, message.from_user.id,
+    current_request_id = await create_new_request(session, message.from_user.id,
                                                   config.channels.search_channel_id,
                                                   sent_message.message_id)
     counter = hcode(f'#{current_request_id}')

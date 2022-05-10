@@ -53,7 +53,7 @@ async def evacuate_people_enter_conditions(message: Message, state: FSMContext):
 
 @evacuation_router.message(Evacuate.EnterAdditionalMessage, F.text)
 async def evacuate_people_enter_additional_message(message: Message, state: FSMContext, bot: Bot, config: Config,
-                                                   scheduler: AsyncIOScheduler):
+                                                   scheduler: AsyncIOScheduler, session):
     additional_message = message.text
 
     data = await state.get_data()
@@ -73,7 +73,7 @@ async def evacuate_people_enter_additional_message(message: Message, state: FSMC
            additional_message=additional_message)
 
     current_request_id = await post_new_request(bot, config.channels.evacuation_channel_id, text_format,
-                                                state.storage, message.from_user.id)
+                                                session, message.from_user.id)
     create_jobs(scheduler, message.from_user.id, current_request_id)
     await message.answer(f'Ваша заявка №{current_request_id} была принята!' + '\n\n' + text_format)
 

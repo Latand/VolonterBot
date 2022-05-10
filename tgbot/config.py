@@ -2,6 +2,27 @@ from dataclasses import dataclass
 
 from environs import Env
 
+from sqlalchemy.engine import URL
+
+
+@dataclass
+class DbConfig:
+    host: str
+    password: str
+    user: str
+    database: str
+    port: int = 5432
+
+    def construct_sqlalchemy_url(self) -> URL:
+        return URL.create(
+            drivername="postgresql+asyncpg",
+            username=self.user,
+            password=self.password,
+            host=self.host,
+            database=self.database,
+            port=self.port
+        )
+
 
 @dataclass
 class RedisConfig:
@@ -40,6 +61,7 @@ class Config:
     misc: Miscellaneous
     channels: Channels
     redis_config: RedisConfig
+    db: DbConfig
 
 
 def load_config(path: str = None):
@@ -65,5 +87,12 @@ def load_config(path: str = None):
             port=env.int('REDIS_PORT'),
             db=env.int('REDIS_DB'),
             password=env.str('REDIS_PASSWORD')
+        ),
+
+        db=DbConfig(
+            host=env.str('DB_HOST'),
+            password=env.str('POSTGRES_PASSWORD'),
+            user=env.str('POSTGRES_USER'),
+            database=env.str('POSTGRES_DB')
         ),
     )

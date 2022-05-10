@@ -8,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from apscheduler_di import ContextSchedulerDecorator
 from rodi import Container
+from sqlalchemy.orm import sessionmaker
 from tzlocal import get_localzone
 
 from schedulers.exceptions import DeleteRequest
@@ -21,7 +22,7 @@ async def handle_job_error(event: JobExecutionEvent, ctx: Container):
         scheduler.remove_job(event.job_id)
 
 
-def setup_scheduler(bot=None, config: Config = None, storage: RedisStorage = None):
+def setup_scheduler(bot=None, config: Config = None, storage: RedisStorage = None, session_pool=None):
     if not config:
         config = load_config()
 
@@ -43,6 +44,7 @@ def setup_scheduler(bot=None, config: Config = None, storage: RedisStorage = Non
     scheduler.ctx.add_instance(bot, declared_class=Bot)
     scheduler.ctx.add_instance(scheduler, declared_class=BaseScheduler)
     scheduler.ctx.add_instance(storage, declared_class=RedisStorage)
+    scheduler.ctx.add_instance(session_pool, declared_class=sessionmaker)
 
     scheduler.on_job_error += handle_job_error
     return scheduler
