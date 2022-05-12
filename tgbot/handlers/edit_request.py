@@ -29,7 +29,8 @@ async def edit_request_callback(call: CallbackQuery, state: FSMContext, callback
         await call.message.edit_text(f'Произошла ошибка... Сообщение отправлено администратору')
         if not callback_data.active:
             await bot.send_message(config.tg_bot.admin_ids[-1],
-                                   f'‼️ Заявка №{request.id} от {get_mention_user(call.from_user)} не актуальная')
+                                   f'‼️ Заявка №{request.id} от {get_mention_user(call.from_user)} '
+                                   f'была отменена пользователем и уже не актуальная')
         return
 
     if callback_data.active:
@@ -42,7 +43,7 @@ async def edit_request_callback(call: CallbackQuery, state: FSMContext, callback
         await update_request(session, Request.id == request.id, status='inactive')
 
         await bot.send_message(request.channel_id,
-                               f'‼️ Пользователь: {get_mention_user(call.from_user)} отменил заявку №{request.id}',
+                               f'‼️ Пользователь: {get_mention_user(call.from_user)} удалил заявку №{request.id}',
                                reply_to_message_id=request.message_id)
 
 
