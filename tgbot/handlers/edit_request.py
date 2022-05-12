@@ -41,7 +41,8 @@ async def edit_request_callback(call: CallbackQuery, state: FSMContext, callback
         await call.message.edit_text(f'Заявка №{request.id} более не активна')
         await update_request(session, Request.id == request.id, status='inactive')
 
-        await bot.send_message(request.channel_id, f'‼️ Заявка №{request.id} уже не актуальная',
+        await bot.send_message(request.channel_id,
+                               f'‼️ Пользователь: {get_mention_user(call.from_user)} отменил заявку №{request.id}',
                                reply_to_message_id=request.message_id)
 
 
@@ -76,6 +77,7 @@ async def delete_request_handler(message: Message, state: FSMContext, bot: Bot, 
         await message.answer(f'Заявка №{request_id} удалена')
         await delete_request_by_id(session, request_id)
 
-        await bot.send_message(request.channel_id, f'‼️ Заявка №{request_id} уже не актуальная',
+        await bot.send_message(request.channel_id,
+                               f'‼️ Заявку №{request_id} удалил пользователь {get_mention_user(message.from_user)}',
                                reply_to_message_id=request.message_id)
     await state.clear()

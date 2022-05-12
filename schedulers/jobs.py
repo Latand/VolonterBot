@@ -20,7 +20,7 @@ async def check_if_active(bot: Bot, current_request_id: int, session_pool: sessi
         if not request:
             return
         if request.status in ('new', 'to_check'):
-            await bot.send_message(request.channel_id, f'‼️ Заявка №{current_request_id} уже не актуальная',
+            await bot.send_message(request.channel_id, f'‼️ Заявка №{current_request_id} истекла и уже не актуальная',
                                    reply_to_message_id=request.message_id)
             await bot.send_message(request.chat_id, f'Ваша ‼️ Заявка №{current_request_id} уже не актуальная')
             await update_request(session, Request.id == int(current_request_id), status='inactive')
