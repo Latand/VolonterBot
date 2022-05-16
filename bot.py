@@ -61,7 +61,7 @@ async def main():
         user_router,
         evacuation_router,
         medicine_router,
-        provision_router,
+        # provision_router,
         search_people_router,
     ]:
         dp.include_router(router)
